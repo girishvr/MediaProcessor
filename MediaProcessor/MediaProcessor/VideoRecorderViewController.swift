@@ -50,13 +50,16 @@ class CameraController {
         }
         func configureCaptureDevices() throws {
             //1
-            let session = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaType.video, position: .unspecified)
-            
+            let session = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInDualCamera, .builtInWideAngleCamera, .builtInTelephotoCamera], mediaType: AVMediaType.video, position: .unspecified)
+            guard let captureDevice = AVCaptureDevice.default(for: AVMediaType.video) else {
+               fatalError()
+            }
+
             let myCameras: [AVCaptureDevice]? = nil
             let cameras = (session.devices.compactMap{$0})
 //            if (cameras == nil){ throw CameraControllerError.noCamerasAvailable }
             
-            guard let cameras = myCameras, !cameras.isEmpty else { throw CameraControllerError.noCamerasAvailable }
+//            guard let cameras = myCameras, !cameras.isEmpty else { throw CameraControllerError.noCamerasAvailable }
              
             //2
             for camera in cameras {
