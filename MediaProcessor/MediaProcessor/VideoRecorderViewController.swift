@@ -187,8 +187,18 @@ class VideoRecorderViewController: UIViewController {
         let maxDuration: CMTime = CMTimeMake(value: 600, timescale: 10)
         movieFileOutput.maxRecordedDuration = maxDuration
         movieFileOutput.minFreeDiskSpaceLimit = 1024 * 1024
-        if self.cameraController.captureSession!.canAddOutput(movieFileOutput) {
-            self.cameraController.captureSession!.addOutput(movieFileOutput)
+//        if self.cameraController.captureSession!.canAddOutput(movieFileOutput) {
+//            self.cameraController.captureSession!.addOutput(movieFileOutput)
+//        }
+
+        if self.cameraController.captureSession!.canAddOutput(theOutput) {
+            self.cameraController.captureSession!.addOutput(theOutput)
+            cameraController.captureSession?.sessionPreset = AVCaptureSession.Preset.high
+            if let connection = movieFileOutput.connection(with: AVMediaType.video) {
+                if connection.isVideoStabilizationSupported {
+                    connection.preferredVideoStabilizationMode = .auto
+                }
+            }
         }
         
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
