@@ -181,7 +181,7 @@ class VideoRecorderViewController: UIViewController {
         
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let fileURL = URL(string:"\(documentsURL.appendingPathComponent("temp"))" + ".mov")
-        print("*****fileurl%@",fileURL ?? "00000")
+        print("*****fileurl %@",fileURL ?? "00000")
 
         
         self.cameraController.captureSession!.startRunning()
