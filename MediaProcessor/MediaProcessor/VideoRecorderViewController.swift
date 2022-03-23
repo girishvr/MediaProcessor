@@ -100,14 +100,23 @@ class CameraController {
         
            else { throw CameraControllerError.noCamerasAvailable }
         }
-        func configurePhotoOutput() throws { }
+        func configurePhotoOutput() throws {
+            guard let captureSession = self.captureSession else { throw CameraControllerError.captureSessionIsMissing }
+            
+               self.photoOutput = AVCapturePhotoOutput()
+               self.photoOutput!.setPreparedPhotoSettingsArray([AVCapturePhotoSettings(format: [AVVideoCodecKey : AVVideoCodecJPEG])], completionHandler: nil)
+            
+               if captureSession.canAddOutput(self.photoOutput) { captureSession.addOutput(self.photoOutput) }
+            
+               captureSession.startRunning()
+        }
 
         DispatchQueue(label: "prepare").async {
            do {
                createCaptureSession()
                try configureCaptureDevices()
                try configureDeviceInputs()
-//               try configurePhotoOutput()
+               try configurePhotoOutput()
            }
                
            catch {
