@@ -206,6 +206,9 @@ class VideoRecorderViewController: UIViewController {
             recordVideo()
         }else{
             stopRecording()
+            self.dismiss(animated: true) {
+                print ("Go back")
+            }
         }
         
     }
@@ -229,7 +232,7 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
     }
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection){
-        
+        print("buffering...")
     }
 
 }
