@@ -168,15 +168,31 @@ class VideoRecorderViewController: UIViewController {
 
         captureButton.layer.cornerRadius = min(captureButton.frame.width, captureButton.frame.height) / 2
     }
-    func stopRecording(){
-        self.cameraController.captureSession!.stopRunning()
+    
+    // MARK: Stop recording
 
+    func stopRecording(){
+        guard isRecording else { return }
+        isRecording = false
+        videoWriterInput.markAsFinished()
+        print("marked as finished")
+        videoWriter.finishWriting { [weak self] in
+            self?.sessionAtSourceTime = nil
+        }
+
+        self.cameraController.captureSession!.stopRunning()
+        self.dismiss(animated: true) {
+            print ("Go back")
+        }
     }
+    
+    var theOutput : AVCaptureVideoDataOutput!
+
     func recordVideo(){
         
         let bufferQueue = DispatchQueue(label: "bufferRate", qos: .userInteractive, attributes: .concurrent)
 
-        let theOutput = AVCaptureVideoDataOutput()
+        theOutput = AVCaptureVideoDataOutput()
         
         theOutput.videoSettings = [(kCVPixelBufferPixelFormatTypeKey as String): NSNumber(value:kCVPixelFormatType_32BGRA)]
         theOutput.alwaysDiscardsLateVideoFrames = true
@@ -206,7 +222,7 @@ class VideoRecorderViewController: UIViewController {
         print("\nfileurl - %@", fileURL ?? "00000")
         
         self.cameraController.captureSession!.startRunning()
-        
+        start()
 //        movieFileOutput.startRecording(to: fileURL!, recordingDelegate: self)
 
     }
@@ -217,9 +233,7 @@ class VideoRecorderViewController: UIViewController {
             recordVideo()
         }else{
             stopRecording()
-            self.dismiss(animated: true) {
-                print ("Go back")
-            }
+            
         }
         
     }
@@ -235,6 +249,96 @@ class VideoRecorderViewController: UIViewController {
     }
     */
     var buffer = 0
+    
+    //video file location method
+    func videoFileLocation() -> URL {
+        let documentsPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as NSString
+        let videoOutputUrl = URL(fileURLWithPath: documentsPath.appendingPathComponent("temp")).appendingPathExtension("mov")
+        do {
+        if FileManager.default.fileExists(atPath: videoOutputUrl.path) {
+            try FileManager.default.removeItem(at: videoOutputUrl)
+            print("file removed")
+        }
+        } catch {
+            print(error)
+        }
+
+        return videoOutputUrl
+    }
+    var videoWriter : AVAssetWriter!
+    var videoWriterInput : AVAssetWriterInput!
+    var audioWriterInput : AVAssetWriterInput!
+    var sessionAtSourceTime : CMTime!
+    func setUpWriter() {
+
+        do {
+            let outputFileLocation = videoFileLocation()
+            videoWriter = try AVAssetWriter(outputURL: outputFileLocation, fileType: AVFileType.mov)
+
+            // add video input
+            videoWriterInput = AVAssetWriterInput(mediaType: AVMediaType.video, outputSettings: [
+                AVVideoCodecKey : AVVideoCodecType.h264,
+                AVVideoWidthKey : 720,
+                AVVideoHeightKey : 1280,
+                AVVideoCompressionPropertiesKey : [
+                    AVVideoAverageBitRateKey : 2300000,
+                    ],
+                ])
+
+            videoWriterInput.expectsMediaDataInRealTime = true
+
+            if videoWriter.canAdd(videoWriterInput) {
+                videoWriter.add(videoWriterInput)
+                print("video input added")
+            } else {
+                print("no input added")
+            }
+
+            // add audio input
+            audioWriterInput = AVAssetWriterInput(mediaType: AVMediaType.audio, outputSettings: nil)
+
+            audioWriterInput.expectsMediaDataInRealTime = true
+
+            if videoWriter.canAdd(audioWriterInput!) {
+                videoWriter.add(audioWriterInput!)
+                print("audio input added")
+            }
+
+
+            videoWriter.startWriting()
+        } catch let error {
+            debugPrint(error.localizedDescription)
+        }
+
+
+    }
+    var isRecording  = false
+    // MARK: Start recording
+    func start() {
+        guard !isRecording else { return }
+        isRecording = true
+        sessionAtSourceTime = nil
+        setUpWriter()
+        print(isRecording)
+        print(videoWriter as Any)
+        if videoWriter.status == .writing {
+            print("status writing")
+        } else if videoWriter.status == .failed {
+            print("status failed")
+        } else if videoWriter.status == .cancelled {
+            print("status cancelled")
+        } else if videoWriter.status == .unknown {
+            print("status unknown")
+        } else {
+            print("status completed")
+        }
+
+    }
+
+    func canWrite() -> Bool {
+        return isRecording && videoWriter != nil && videoWriter?.status == .writing
+    }
+
 
 }
 
@@ -246,6 +350,41 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection){
         buffer += 1
         print("buffering...\(buffer)")
+        
+        
+        let writable = canWrite()
+
+            if writable,
+                sessionAtSourceTime == nil {
+                // start writing
+                sessionAtSourceTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+                videoWriter.startSession(atSourceTime: sessionAtSourceTime!)
+                //print("Writing")
+            }
+
+            if output == theOutput {
+                connection.videoOrientation = .portrait
+
+                if connection.isVideoMirroringSupported {
+                    connection.isVideoMirrored = true
+                }
+            }
+
+            if writable,
+                output == theOutput,
+                (videoWriterInput.isReadyForMoreMediaData) {
+                // write video buffer
+                videoWriterInput.append(sampleBuffer)
+                //print("video buffering")
+            }
+//        else if writable,
+//                output == audioDataOutput,
+//                (audioWriterInput.isReadyForMoreMediaData) {
+//                // write audio buffer
+//                audioWriterInput?.append(sampleBuffer)
+//                //print("audio buffering")
+//            }
+        
     }
 
 }
