@@ -194,7 +194,7 @@ class VideoRecorderViewController: UIViewController {
         if self.cameraController.captureSession!.canAddOutput(theOutput) {
             self.cameraController.captureSession!.addOutput(theOutput)
             cameraController.captureSession?.sessionPreset = AVCaptureSession.Preset.high
-            if let connection = movieFileOutput.connection(with: AVMediaType.video) {
+            if let connection = theOutput.connection(with: AVMediaType.video) {
                 if connection.isVideoStabilizationSupported {
                     connection.preferredVideoStabilizationMode = .auto
                 }
@@ -206,7 +206,8 @@ class VideoRecorderViewController: UIViewController {
         print("\nfileurl - %@", fileURL ?? "00000")
         
         self.cameraController.captureSession!.startRunning()
-        movieFileOutput.startRecording(to: fileURL!, recordingDelegate: self)
+        
+//        movieFileOutput.startRecording(to: fileURL!, recordingDelegate: self)
 
     }
 
@@ -233,6 +234,7 @@ class VideoRecorderViewController: UIViewController {
         // Pass the selected object to the new view controller.
     }
     */
+    var buffer = 0
 
 }
 
@@ -242,7 +244,8 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
     }
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection){
-        print("buffering...")
+        buffer += 1
+        print("buffering...\(buffer)")
     }
 
 }
