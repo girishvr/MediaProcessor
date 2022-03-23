@@ -53,16 +53,9 @@ class CameraController {
         func configureCaptureDevices() throws {
             //1
             let session = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInDualCamera, .builtInWideAngleCamera, .builtInTelephotoCamera], mediaType: AVMediaType.video, position: .unspecified)
-            guard let captureDevice = AVCaptureDevice.default(for: AVMediaType.video) else {
-               fatalError()
-            }
 
-            let myCameras: [AVCaptureDevice]? = nil
+
             let cameras = (session.devices.compactMap{$0})
-//            if (cameras == nil){ throw CameraControllerError.noCamerasAvailable }
-            
-//            guard let cameras = myCameras, !cameras.isEmpty else { throw CameraControllerError.noCamerasAvailable }
-             
             //2
             for camera in cameras {
                 if camera.position == .front {
@@ -176,6 +169,25 @@ class VideoRecorderViewController: UIViewController {
         captureButton.layer.cornerRadius = min(captureButton.frame.width, captureButton.frame.height) / 2
     }
 
+    @IBAction func captureVideo(){
+        let  movieFileOutput = AVCaptureMovieFileOutput()
+        
+        let maxDuration: CMTime = CMTimeMake(value: 600, timescale: 10)
+        movieFileOutput.maxRecordedDuration = maxDuration
+        movieFileOutput.minFreeDiskSpaceLimit = 1024 * 1024
+        if self.cameraController.captureSession!.canAddOutput(movieFileOutput) {
+            self.cameraController.captureSession!.addOutput(movieFileOutput)
+        }
+        
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileURL = URL(string:"\(documentsURL.appendingPathComponent("temp"))" + ".mov")
+        print("*****fileurl%@",fileURL ?? "00000")
+
+        
+        self.cameraController.captureSession!.startRunning()
+        movieFileOutput.startRecording(to: fileURL!, recordingDelegate: self)
+
+    }
     
 
     /*
@@ -188,6 +200,13 @@ class VideoRecorderViewController: UIViewController {
     }
     */
 
+}
+
+extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate{
+    func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
+        print(outputFileURL.relativeString)
+    }
+    
 }
 
 //func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection)
