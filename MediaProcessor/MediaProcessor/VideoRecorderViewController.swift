@@ -253,7 +253,7 @@ class VideoRecorderViewController: UIViewController {
     //video file location method
     func videoFileLocation() -> URL {
         let documentsPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as NSString
-        let videoOutputUrl = URL(fileURLWithPath: documentsPath.appendingPathComponent("temp")).appendingPathExtension("mov")
+        let videoOutputUrl = URL(fileURLWithPath: documentsPath.appendingPathComponent("video")).appendingPathExtension("mov")
         do {
         if FileManager.default.fileExists(atPath: videoOutputUrl.path) {
             try FileManager.default.removeItem(at: videoOutputUrl)
