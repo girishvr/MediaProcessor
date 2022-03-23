@@ -168,8 +168,20 @@ class VideoRecorderViewController: UIViewController {
 
         captureButton.layer.cornerRadius = min(captureButton.frame.width, captureButton.frame.height) / 2
     }
+    func stopRecording(){
+        self.cameraController.captureSession!.stopRunning()
 
-    @IBAction func captureVideo(){
+    }
+    func recordVideo(){
+        
+        let bufferQueue = DispatchQueue(label: "bufferRate", qos: .userInteractive, attributes: .concurrent)
+
+        let theOutput = AVCaptureVideoDataOutput()
+        
+        theOutput.videoSettings = [(kCVPixelBufferPixelFormatTypeKey as String): NSNumber(value:kCVPixelFormatType_32BGRA)]
+        theOutput.alwaysDiscardsLateVideoFrames = true
+        theOutput.setSampleBufferDelegate(self, queue: bufferQueue)
+        
         let  movieFileOutput = AVCaptureMovieFileOutput()
         
         let maxDuration: CMTime = CMTimeMake(value: 600, timescale: 10)
@@ -181,12 +193,21 @@ class VideoRecorderViewController: UIViewController {
         
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let fileURL = URL(string:"\(documentsURL.appendingPathComponent("temp"))" + ".mov")
-        print("*****fileurl %@",fileURL ?? "00000")
-
+        print("\nfileurl - %@", fileURL ?? "00000")
         
         self.cameraController.captureSession!.startRunning()
         movieFileOutput.startRecording(to: fileURL!, recordingDelegate: self)
 
+    }
+
+    @IBAction func captureVideo(_ sender: UIButton){
+        sender.isSelected = !sender.isSelected
+        if(sender.isSelected){
+            recordVideo()
+        }else{
+            stopRecording()
+        }
+        
     }
     
 
@@ -202,11 +223,14 @@ class VideoRecorderViewController: UIViewController {
 
 }
 
-extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate{
+extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AVCaptureVideoDataOutputSampleBufferDelegate{
     func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
-        print(outputFileURL.relativeString)
+        print("didFinishRecordingTo - " + outputFileURL.relativeString)
     }
     
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection){
+        
+    }
+
 }
 
-//func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection)
