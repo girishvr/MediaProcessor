@@ -198,15 +198,6 @@ class VideoRecorderViewController: UIViewController {
         theOutput.alwaysDiscardsLateVideoFrames = true
         theOutput.setSampleBufferDelegate(self, queue: bufferQueue)
         
-        let  movieFileOutput = AVCaptureMovieFileOutput()
-        
-        let maxDuration: CMTime = CMTimeMake(value: 600, timescale: 10)
-        movieFileOutput.maxRecordedDuration = maxDuration
-        movieFileOutput.minFreeDiskSpaceLimit = 1024 * 1024
-//        if self.cameraController.captureSession!.canAddOutput(movieFileOutput) {
-//            self.cameraController.captureSession!.addOutput(movieFileOutput)
-//        }
-
         if self.cameraController.captureSession!.canAddOutput(theOutput) {
             self.cameraController.captureSession!.addOutput(theOutput)
             cameraController.captureSession?.sessionPreset = AVCaptureSession.Preset.high
@@ -216,13 +207,23 @@ class VideoRecorderViewController: UIViewController {
                 }
             }
         }
-        
-        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let fileURL = URL(string:"\(documentsURL.appendingPathComponent("temp"))" + ".mov")
-        print("\nfileurl - %@", fileURL ?? "00000")
-        
         self.cameraController.captureSession!.startRunning()
         start()
+
+        
+//        let  movieFileOutput = AVCaptureMovieFileOutput()
+//
+//        let maxDuration: CMTime = CMTimeMake(value: 600, timescale: 10)
+//        movieFileOutput.maxRecordedDuration = maxDuration
+//        movieFileOutput.minFreeDiskSpaceLimit = 1024 * 1024
+//        if self.cameraController.captureSession!.canAddOutput(movieFileOutput) {
+//            self.cameraController.captureSession!.addOutput(movieFileOutput)
+//        }
+        
+//        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+//        let fileURL = URL(string:"\(documentsURL.appendingPathComponent("temp"))" + ".mov")
+//        print("\nfileurl - %@", fileURL ?? "00000")
+        
 //        movieFileOutput.startRecording(to: fileURL!, recordingDelegate: self)
 
     }
@@ -338,6 +339,8 @@ class VideoRecorderViewController: UIViewController {
     func canWrite() -> Bool {
         return isRecording && videoWriter != nil && videoWriter?.status == .writing
     }
+    
+    
 
 
 }
@@ -351,6 +354,11 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
         buffer += 1
         print("buffering...\(buffer)")
         
+        let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
+        let ciimage = CIImage(cvPixelBuffer: imageBuffer)
+        let image = self.convert(cmage: ciimage)
+        
+        saveImage(image: image, fileName: "buffer-\(buffer).jpg")
         
         let writable = canWrite()
 
@@ -375,7 +383,7 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
                 (videoWriterInput.isReadyForMoreMediaData) {
                 // write video buffer
                 videoWriterInput.append(sampleBuffer)
-                //print("video buffering")
+                print("video buffering")
             }
 //        else if writable,
 //                output == audioDataOutput,
@@ -385,6 +393,35 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
 //                //print("audio buffering")
 //            }
         
+    }
+    
+    // Convert CIImage to UIImage
+    func convert(cmage: CIImage) -> UIImage {
+         let context = CIContext(options: nil)
+         let cgImage = context.createCGImage(cmage, from: cmage.extent)!
+         let image = UIImage(cgImage: cgImage)
+         return image
+    }
+    
+    func saveImage(image: UIImage, fileName: String){
+        do {
+            // get the documents directory url
+            let documentsDirectory = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+            print("documentsDirectory:", documentsDirectory.path)
+            // choose a name for your image
+//            let fileName = "image.jpg"
+            // create the destination file url to save your image
+            let fileURL = documentsDirectory.appendingPathComponent(fileName)
+            // get your UIImage jpeg data representation and check if the destination file url already exists
+            if let data = image.jpegData(compressionQuality:  1),
+                !FileManager.default.fileExists(atPath: fileURL.path) {
+                // writes the image data to disk
+                try data.write(to: fileURL)
+                print("file saved")
+            }
+        } catch {
+            print("error:", error)
+        }
     }
 
 }
