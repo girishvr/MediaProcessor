@@ -353,45 +353,52 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection){
         buffer += 1
         print("buffering...\(buffer)")
+       
+        background { [self] in
+             //background job
+            let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
+            let ciimage = CIImage(cvPixelBuffer: imageBuffer)
+            let image = self.convert(cmage: ciimage)
+            
+            saveImage(image: image, fileName: "buffer-\(buffer).jpg")
+        }
         
-        let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
-        let ciimage = CIImage(cvPixelBuffer: imageBuffer)
-        let image = self.convert(cmage: ciimage)
-        
-        saveImage(image: image, fileName: "buffer-\(buffer).jpg")
-        
-        let writable = canWrite()
+        background { [self] in
+            let writable = canWrite()
 
-            if writable,
-                sessionAtSourceTime == nil {
-                // start writing
-                sessionAtSourceTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                videoWriter.startSession(atSourceTime: sessionAtSourceTime!)
-                //print("Writing")
-            }
-
-            if output == theOutput {
-                connection.videoOrientation = .portrait
-
-                if connection.isVideoMirroringSupported {
-                    connection.isVideoMirrored = true
+                if writable,
+                    sessionAtSourceTime == nil {
+                    // start writing
+                    sessionAtSourceTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+                    videoWriter.startSession(atSourceTime: sessionAtSourceTime!)
+                    //print("Writing")
                 }
-            }
 
-            if writable,
-                output == theOutput,
-                (videoWriterInput.isReadyForMoreMediaData) {
-                // write video buffer
-                videoWriterInput.append(sampleBuffer)
-                print("video buffering")
-            }
-//        else if writable,
-//                output == audioDataOutput,
-//                (audioWriterInput.isReadyForMoreMediaData) {
-//                // write audio buffer
-//                audioWriterInput?.append(sampleBuffer)
-//                //print("audio buffering")
-//            }
+                if output == theOutput {
+                    connection.videoOrientation = .portrait
+
+                    if connection.isVideoMirroringSupported {
+                        connection.isVideoMirrored = true
+                    }
+                }
+
+                if writable,
+                    output == theOutput,
+                    (videoWriterInput.isReadyForMoreMediaData) {
+                    // write video buffer
+                    videoWriterInput.append(sampleBuffer)
+                    print("video buffering")
+                }
+    //        else if writable,
+    //                output == audioDataOutput,
+    //                (audioWriterInput.isReadyForMoreMediaData) {
+    //                // write audio buffer
+    //                audioWriterInput?.append(sampleBuffer)
+    //                //print("audio buffering")
+    //            }
+        }
+        
+        
         
     }
     
@@ -426,3 +433,15 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
 
 }
 
+
+func background(work: @escaping () -> ()) {
+    DispatchQueue.global(qos: .userInitiated).async {
+        work()
+    }
+}
+
+func main(work: @escaping () -> ()) {
+    DispatchQueue.main.async {
+        work()
+    }
+}
