@@ -233,8 +233,9 @@ class VideoRecorderViewController: UIViewController {
         if(sender.isSelected){
             recordVideo()
         }else{
-            stopRecording()
-            
+            main{
+                self.stopRecording()
+            }
         }
         
     }
