@@ -356,15 +356,6 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
         print("buffering...\(buffer)")
        
         background { [self] in
-             //background job
-            let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
-            let ciimage = CIImage(cvPixelBuffer: imageBuffer)
-            let image = self.convert(cmage: ciimage)
-            
-            saveImage(image: image, fileName: "buffer-\(buffer).jpg")
-        }
-        
-        background { [self] in
             let writable = canWrite()
 
                 if writable,
@@ -373,6 +364,15 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
                     sessionAtSourceTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
                     videoWriter.startSession(atSourceTime: sessionAtSourceTime!)
                     //print("Writing")
+                    background { [self] in
+                         //background job
+                        let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
+                        let ciimage = CIImage(cvPixelBuffer: imageBuffer)
+                        let image = self.convert(cmage: ciimage)
+                        
+                        saveImage(image: image, fileName: "buffer-\(buffer).jpg")
+                    }
+                    
                 }
 
                 if output == theOutput {
@@ -421,12 +421,14 @@ extension VideoRecorderViewController : AVCaptureFileOutputRecordingDelegate, AV
             // create the destination file url to save your image
             let fileURL = documentsDirectory.appendingPathComponent(fileName)
             // get your UIImage jpeg data representation and check if the destination file url already exists
-            if let data = image.jpegData(compressionQuality:  1),
-                !FileManager.default.fileExists(atPath: fileURL.path) {
-                // writes the image data to disk
-                try data.write(to: fileURL)
-                print("file saved")
-            }
+//            if let data = image.jpegData(compressionQuality:  1),
+//                !FileManager.default.fileExists(atPath: fileURL.path) {
+//                // writes the image data to disk
+//                try data.write(to: fileURL)
+//                print("file saved")
+//            }
+            let data = image.jpegData(compressionQuality:  1)
+            try data!.write(to: fileURL)
         } catch {
             print("error:", error)
         }
