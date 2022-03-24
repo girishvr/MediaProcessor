@@ -342,8 +342,6 @@ class VideoRecorderViewController: UIViewController {
         return isRecording && videoWriter != nil && videoWriter?.status == .writing
     }
     
-    
-
 
 }
 
